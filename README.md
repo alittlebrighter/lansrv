@@ -1,2 +1,2 @@
 # LanSrv
-This is primarily a simple wrapper for [zeroconf](github.com/grandcat/zeroconf).  There are two major functions: running an mDNS server that advertises all local services and a scanning tool to find all services on the local network.
+This is primarily a simple wrapper for [zeroconf](https://github.com/grandcat/zeroconf).  There are two major functions: running an mDNS server that advertises all local services and a scanning tool to find all services on the local network.
