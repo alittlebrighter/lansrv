@@ -14,24 +14,15 @@ import (
 	"github.com/alittlebrighter/lansrv"
 )
 
-const helpText = `LanSrv
-Usage: lansrv [commands] [options]
-Commands:
-  none     : runs the server
-  help     : print this help message
-  discover : scans the local network for services advertised via mDNS
-  
-Options:
-  --scan-dir : Specifies the directory to walk to find LanSrv service configurations.
-  --time     : Number of seconds to scan the local network for services.
-  --service  : Only print results matching the service name.`
-
 func main() {
 	var scanDir string
 	flag.StringVar(&scanDir, "scan-dir", "/etc/systemd/system",
 		"Specifies the directory to walk to find LanSrv service configurations.")
 	var port int
 	flag.IntVar(&port, "port", 42424, "Port to run the server on.")
+	var discover bool
+	flag.BoolVar(&discover, "discover", false,
+		"Scan the local network for services published by other LanSrv nodes.  If not set, the server will start.")
 	var seconds int
 	flag.IntVar(&seconds, "time", 5, "Number of seconds to scan the local network for services.")
 	var service string
@@ -39,10 +30,8 @@ func main() {
 	flag.Parse()
 
 	switch {
-	case len(os.Args) > 1 && strings.Contains(os.Args[1], "help"):
-		fmt.Println(helpText)
-	case len(os.Args) > 1 && os.Args[len(os.Args)-1] == "discover":
-		discover(seconds, service)
+	case discover:
+		runDiscovery(seconds, service)
 	default:
 		runServer(scanDir, port)
 	}
@@ -75,13 +64,14 @@ func runServer(scanDir string, port int) {
 	<-sigc
 }
 
-func discover(seconds int, service string) {
+func runDiscovery(seconds int, service string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(seconds))
 	defer cancel()
 
 	networkAds, err := lansrv.ServicesLookup(ctx)
 	if err != nil {
 		fmt.Println("Failed to lookup services:", err)
+		return
 	}
 
 	if len(service) > 0 {
