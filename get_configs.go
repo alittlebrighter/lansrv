@@ -4,10 +4,9 @@ Package lansrv: These functions are built to work with systemd.
 package lansrv
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/zieckey/goini"
@@ -43,36 +42,32 @@ func ParseServiceFiles(configFiles []string) (configs []LanAd) {
 			continue
 		}
 
-		ad, err := NewLanAd(adMap)
-		if err != nil {
-			continue
-		}
+		ad := new(LanAd)
+		ad.FromMap(adMap)
 
-		configs = append(configs, ad)
+		configs = append(configs, *ad)
 	}
 
 	return
 }
 
-type LanAd map[string]string
+type LanAd struct {
+	Name     string
+	Port     int
+	Protocol string
+}
 
-func NewLanAd(kvMap map[string]string) (LanAd, error) {
-	name, nameOk := kvMap["Name"]
-	port, portOk := kvMap["Port"]
-
-	if !nameOk || !portOk {
-		return nil, errors.New(fmt.Sprint("Name or Port not found: Name=", name, " Port=", port))
+func (ad *LanAd) FromMap(adMap map[string]string) {
+	if name, ok := adMap["Name"]; ok {
+		ad.Name = name
 	}
 
-	return LanAd(kvMap), nil
-}
+	if port, ok := adMap["Port"]; ok {
+		portNum, _ := strconv.Atoi(port)
+		ad.Port = portNum
+	}
 
-func (la LanAd) Name() string {
-	name, _ := la["Name"]
-	return name
-}
-
-func (la LanAd) Port() string {
-	port, _ := la["Port"]
-	return port
+	if protocol, ok := adMap["Protocol"]; ok {
+		ad.Protocol = protocol
+	}
 }

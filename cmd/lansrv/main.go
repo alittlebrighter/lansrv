@@ -27,11 +27,13 @@ func main() {
 	flag.IntVar(&seconds, "time", 5, "Number of seconds to scan the local network for services.")
 	var service string
 	flag.StringVar(&service, "service", "", "Only print results matching the service name.")
+	var delimiter string
+	flag.StringVar(&delimiter, "delim", ",", "Delimiter to use when only printing specific service endpoints.")
 	flag.Parse()
 
 	switch {
 	case discover:
-		runDiscovery(seconds, service)
+		runDiscovery(seconds, service, delimiter)
 	default:
 		runServer(scanDir, port)
 	}
@@ -64,7 +66,7 @@ func runServer(scanDir string, port int) {
 	<-sigc
 }
 
-func runDiscovery(seconds int, service string) {
+func runDiscovery(seconds int, service, delimiter string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(seconds))
 	defer cancel()
 
@@ -78,15 +80,23 @@ func runDiscovery(seconds int, service string) {
 		svcEndpoints := make([]string, 0)
 		for host, svcs := range networkAds {
 			for _, svc := range svcs {
-				if svc.Name() != service {
+				if svc.Name != service {
 					continue
 				}
 
-				svcEndpoints = append(svcEndpoints, host+":"+svc.Port())
+				var endpoint strings.Builder
+				if len(svc.Protocol) > 0 {
+					endpoint.WriteString(svc.Protocol + "://")
+				}
+				endpoint.WriteString(host)
+				if svc.Port > 0 {
+					endpoint.WriteString(fmt.Sprintf(":%d", svc.Port))
+				}
+				svcEndpoints = append(svcEndpoints, endpoint.String())
 			}
 		}
 
-		fmt.Print(strings.Join(svcEndpoints, " "))
+		fmt.Print(strings.Join(svcEndpoints, delimiter))
 		return
 	}
 
