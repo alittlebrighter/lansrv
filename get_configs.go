@@ -71,3 +71,19 @@ func (ad *LanAd) FromMap(adMap map[string]string) {
 		ad.Protocol = protocol
 	}
 }
+
+// FromString takes a string formatted {{protocol}}://{{service name}}:{{port}}
+func (ad *LanAd) FromString(adStr string) {
+	if protoSplitI := strings.Index(adStr, "://"); protoSplitI > -1 {
+		ad.Protocol = adStr[:protoSplitI]
+		adStr = adStr[protoSplitI:]
+	}
+
+	hostPort := strings.Split(adStr, ":")
+	if len(hostPort) >= 1 {
+		ad.Name = hostPort[0]
+	}
+	if len(hostPort) >= 2 {
+		ad.Port, _ = strconv.Atoi(hostPort[1])
+	}
+}

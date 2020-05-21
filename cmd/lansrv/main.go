@@ -15,13 +15,15 @@ import (
 )
 
 func main() {
-	var scanDir string
-	flag.StringVar(&scanDir, "scan-dir", "/etc/systemd/system",
-		"Specifies the directory to walk to find LanSrv service configurations.")
+	var walkDir string
+	flag.StringVar(&walkDir, "dir", "",
+		"Specifies the directory to walk to find LanSrv service configurations.  For systemd this would normally be: /etc/systemd/system")
 	var port int
 	flag.IntVar(&port, "port", 42424, "Port to run the server on.")
-	var discover bool
-	flag.BoolVar(&discover, "discover", false,
+	var publishServices string
+	flag.StringVar(&publishServices, "publish", "", "Comma delimited list of services to advertise in the format `<protocol>://<service-name>:<port>` e.g. http://files:9999")
+	var scan bool
+	flag.BoolVar(&scan, "scan", false,
 		"Scan the local network for services published by other LanSrv nodes.  If not set, the server will start.")
 	var seconds int
 	flag.IntVar(&seconds, "time", 5, "Number of seconds to scan the local network for services.")
@@ -32,17 +34,29 @@ func main() {
 	flag.Parse()
 
 	switch {
-	case discover:
+	case scan:
 		runDiscovery(seconds, service, delimiter)
 	default:
-		runServer(scanDir, port)
+		runServer(walkDir, strings.Split(publishServices, ","), port)
 	}
 }
 
-func runServer(scanDir string, port int) {
-	files := lansrv.GatherServiceConfigs(scanDir)
-	ads := lansrv.ParseServiceFiles(files)
-	if len(files) == 0 {
+func runServer(scanDir string, services []string, port int) {
+	ads := make([]lansrv.LanAd, 0)
+
+	if len(scanDir > 0) {
+		files := lansrv.GatherServiceConfigs(scanDir)
+		ads = append(ads, lansrv.ParseServiceFiles(files)...)
+	}
+
+	for _, svc := range services {
+		ad := new(lansrv.LanAd)
+		ad.FromString(svc)
+
+		ads = append(ads, *ad)
+	}
+
+	if len(ads) == 0 {
 		fmt.Println("No LanSrv configurations found.  Exiting now.")
 		return
 	}
