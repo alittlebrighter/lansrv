@@ -44,7 +44,7 @@ func main() {
 func runServer(scanDir string, services []string, port int) {
 	ads := make([]lansrv.LanAd, 0)
 
-	if len(scanDir > 0) {
+	if len(scanDir) > 0 {
 		files := lansrv.GatherServiceConfigs(scanDir)
 		ads = append(ads, lansrv.ParseServiceFiles(files)...)
 	}
