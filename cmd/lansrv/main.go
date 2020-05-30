@@ -94,7 +94,7 @@ func runDiscovery(seconds int, service, delimiter string, localhost bool) {
 	}
 
 	if len(service) > 0 {
-		svcEndpoints := make([]string, 0)
+		svcEndpoints := make(map[string]interface{})
 		for host, svcs := range networkAds {
 			for _, svc := range svcs {
 				if svc.Name != service {
@@ -109,11 +109,18 @@ func runDiscovery(seconds int, service, delimiter string, localhost bool) {
 				if svc.Port > 0 {
 					endpoint.WriteString(fmt.Sprintf(":%d", svc.Port))
 				}
-				svcEndpoints = append(svcEndpoints, endpoint.String())
+				svcEndpoints[endpoint.String()] = struct{}{}
 			}
 		}
 
-		fmt.Print(strings.Join(svcEndpoints, delimiter))
+		i := 0
+		svcList := make([]string, len(svcEndpoints))
+		for k := range svcEndpoints {
+			svcList[i] = k
+			i++
+		}
+
+		fmt.Print(strings.Join(svcList, delimiter))
 		return
 	}
 
