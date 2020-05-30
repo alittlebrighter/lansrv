@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/grandcat/zeroconf"
@@ -15,6 +17,43 @@ const (
 	service = "LanSrv"
 	domain  = "local"
 )
+
+type LanAd struct {
+	Name     string
+	Port     int
+	Protocol string
+}
+
+func (ad *LanAd) FromMap(adMap map[string]string) {
+	if name, ok := adMap["Name"]; ok {
+		ad.Name = name
+	}
+
+	if port, ok := adMap["Port"]; ok {
+		portNum, _ := strconv.Atoi(port)
+		ad.Port = portNum
+	}
+
+	if protocol, ok := adMap["Protocol"]; ok {
+		ad.Protocol = protocol
+	}
+}
+
+// FromString takes a string formatted {{protocol}}://{{service name}}:{{port}}
+func (ad *LanAd) FromString(adStr string) {
+	if protoSplitI := strings.Index(adStr, "://"); protoSplitI > -1 {
+		ad.Protocol = adStr[:protoSplitI]
+		adStr = adStr[protoSplitI:]
+	}
+
+	hostPort := strings.Split(adStr, ":")
+	if len(hostPort) >= 1 {
+		ad.Name = hostPort[0]
+	}
+	if len(hostPort) >= 2 {
+		ad.Port, _ = strconv.Atoi(hostPort[1])
+	}
+}
 
 func StartMdnsServer(ads []LanAd, port int) (*zeroconf.Server, error) {
 	host, _ := os.Hostname()
@@ -30,7 +69,7 @@ func StartMdnsServer(ads []LanAd, port int) (*zeroconf.Server, error) {
 
 // ServicesLookup returns a map containing hostnames along with a list of LanAds published
 // on that host.
-func ServicesLookup(ctx context.Context) (map[string][]LanAd, error) {
+func ServicesLookup(ctx context.Context, localhost bool) (map[string][]LanAd, error) {
 	// Discover all services on the network (e.g. _workstation._tcp)
 	resolver, err := zeroconf.NewResolver(nil)
 	if err != nil {
@@ -39,6 +78,10 @@ func ServicesLookup(ctx context.Context) (map[string][]LanAd, error) {
 
 	entries := make(chan *zeroconf.ServiceEntry)
 	ads := make(map[string][]LanAd)
+	localIPs := make(map[string]interface{})
+	if !localhost {
+		localIPs = hostIPs()
+	}
 	go func(results <-chan *zeroconf.ServiceEntry, store map[string][]LanAd) {
 		for entry := range results {
 			if len(entry.AddrIPv4) == 0 {
@@ -46,6 +89,9 @@ func ServicesLookup(ctx context.Context) (map[string][]LanAd, error) {
 			}
 			// will there ever be more than one?
 			host := entry.AddrIPv4[0].String()
+			if _, exists := localIPs[host]; exists {
+				continue
+			}
 
 			if _, ok := store[host]; !ok {
 				store[host] = make([]LanAd, 0)
@@ -72,4 +118,32 @@ func ServicesLookup(ctx context.Context) (map[string][]LanAd, error) {
 	<-ctx.Done()
 
 	return ads, nil
+}
+
+// this is stupid but it will work
+func hostIPs() map[string]interface{} {
+	allIPs := make(map[string]interface{})
+	ifaces, _ := net.Interfaces()
+
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			continue
+		}
+
+		addressCount := 0
+		for _, addr := range addrs {
+			addressCount++
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			allIPs[ip.String()] = struct{}{}
+		}
+	}
+	return allIPs
 }

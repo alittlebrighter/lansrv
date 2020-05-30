@@ -31,11 +31,14 @@ func main() {
 	flag.StringVar(&service, "service", "", "Only print results matching the service name.")
 	var delimiter string
 	flag.StringVar(&delimiter, "delim", ",", "Delimiter to use when only printing specific service endpoints.")
+	var localhost bool
+	flag.BoolVar(&localhost, "localhost", false,
+		"Include services hosted on this computer.")
 	flag.Parse()
 
 	switch {
 	case scan:
-		runDiscovery(seconds, service, delimiter)
+		runDiscovery(seconds, service, delimiter, localhost)
 	default:
 		runServer(walkDir, strings.Split(publishServices, ","), port)
 	}
@@ -80,11 +83,11 @@ func runServer(scanDir string, services []string, port int) {
 	<-sigc
 }
 
-func runDiscovery(seconds int, service, delimiter string) {
+func runDiscovery(seconds int, service, delimiter string, localhost bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(seconds))
 	defer cancel()
 
-	networkAds, err := lansrv.ServicesLookup(ctx)
+	networkAds, err := lansrv.ServicesLookup(ctx, localhost)
 	if err != nil {
 		fmt.Println("Failed to lookup services:", err)
 		return

@@ -6,7 +6,6 @@ package lansrv
 import (
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/zieckey/goini"
@@ -49,41 +48,4 @@ func ParseServiceFiles(configFiles []string) (configs []LanAd) {
 	}
 
 	return
-}
-
-type LanAd struct {
-	Name     string
-	Port     int
-	Protocol string
-}
-
-func (ad *LanAd) FromMap(adMap map[string]string) {
-	if name, ok := adMap["Name"]; ok {
-		ad.Name = name
-	}
-
-	if port, ok := adMap["Port"]; ok {
-		portNum, _ := strconv.Atoi(port)
-		ad.Port = portNum
-	}
-
-	if protocol, ok := adMap["Protocol"]; ok {
-		ad.Protocol = protocol
-	}
-}
-
-// FromString takes a string formatted {{protocol}}://{{service name}}:{{port}}
-func (ad *LanAd) FromString(adStr string) {
-	if protoSplitI := strings.Index(adStr, "://"); protoSplitI > -1 {
-		ad.Protocol = adStr[:protoSplitI]
-		adStr = adStr[protoSplitI:]
-	}
-
-	hostPort := strings.Split(adStr, ":")
-	if len(hostPort) >= 1 {
-		ad.Name = hostPort[0]
-	}
-	if len(hostPort) >= 2 {
-		ad.Port, _ = strconv.Atoi(hostPort[1])
-	}
 }
