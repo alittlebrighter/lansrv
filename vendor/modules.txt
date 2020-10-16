@@ -1,10 +1,17 @@
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
+# github.com/davecgh/go-spew v1.1.0
+github.com/davecgh/go-spew/spew
 # github.com/grandcat/zeroconf v1.0.0
 ## explicit
 github.com/grandcat/zeroconf
 # github.com/miekg/dns v1.1.27
 github.com/miekg/dns
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/testify v1.6.1
+## explicit
+github.com/stretchr/testify/assert
 # github.com/zieckey/goini v0.0.0-20180118150432-0da17d361d26
 ## explicit
 github.com/zieckey/goini
@@ -20,3 +27,5 @@ golang.org/x/net/ipv6
 # golang.org/x/sys v0.0.0-20190924154521-2837fb4f24fe
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3
