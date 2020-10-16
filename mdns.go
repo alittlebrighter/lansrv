@@ -102,6 +102,7 @@ func ServicesLookup(ctx context.Context, localhost bool) (map[string][]LanAd, er
 				store[host] = make([]LanAd, 0)
 			}
 
+		new_ad:
 			for _, adData := range entry.Text {
 				ad := LanAd{}
 				adData = strings.ReplaceAll(adData, "\\", "")
@@ -109,6 +110,12 @@ func ServicesLookup(ctx context.Context, localhost bool) (map[string][]LanAd, er
 					fmt.Println("could not parse ad:", err)
 					fmt.Println("adData:", adData)
 					continue
+				}
+
+				for _, listed := range store[host] {
+					if ad.EqualTo(&listed) {
+						continue new_ad
+					}
 				}
 
 				store[host] = append(store[host], ad)
