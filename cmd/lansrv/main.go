@@ -52,9 +52,16 @@ func runServer(scanDir string, services []string, port int) {
 		ads = append(ads, lansrv.ParseServiceFiles(files)...)
 	}
 
+svcs_loop:
 	for _, svc := range services {
 		ad := new(lansrv.LanAd)
 		ad.FromString(svc)
+
+		for _, listed := range ads {
+			if ad.EqualTo(&listed) {
+				continue svcs_loop
+			}
+		}
 
 		ads = append(ads, *ad)
 	}

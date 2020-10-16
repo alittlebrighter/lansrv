@@ -43,8 +43,9 @@ func (ad *LanAd) FromMap(adMap map[string]string) {
 func (ad *LanAd) FromString(adStr string) {
 	if protoSplitI := strings.Index(adStr, "://"); protoSplitI > -1 {
 		ad.Protocol = adStr[:protoSplitI]
-		adStr = adStr[protoSplitI:]
+		adStr = adStr[protoSplitI+3:]
 	}
+	fmt.Println("adStr", adStr)
 
 	hostPort := strings.Split(adStr, ":")
 	if len(hostPort) >= 1 {
@@ -53,6 +54,10 @@ func (ad *LanAd) FromString(adStr string) {
 	if len(hostPort) >= 2 {
 		ad.Port, _ = strconv.Atoi(hostPort[1])
 	}
+}
+
+func (ad *LanAd) EqualTo(other *LanAd) bool {
+	return ad.Name == other.Name && ad.Port == other.Port && ad.Protocol == other.Protocol
 }
 
 func StartMdnsServer(ads []LanAd, port int) (*zeroconf.Server, error) {
