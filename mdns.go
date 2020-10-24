@@ -19,14 +19,15 @@ const (
 )
 
 type LanAd struct {
-	Name     string
+	Service  string
+	Address  net.IP `json:"-"`
 	Port     int
 	Protocol string
 }
 
 func (ad *LanAd) FromMap(adMap map[string]string) {
-	if name, ok := adMap["Name"]; ok {
-		ad.Name = name
+	if name, ok := adMap["Service"]; ok {
+		ad.Service = name
 	}
 
 	if port, ok := adMap["Port"]; ok {
@@ -49,15 +50,59 @@ func (ad *LanAd) FromString(adStr string) {
 
 	hostPort := strings.Split(adStr, ":")
 	if len(hostPort) >= 1 {
-		ad.Name = hostPort[0]
+		ad.Service = hostPort[0]
 	}
 	if len(hostPort) >= 2 {
 		ad.Port, _ = strconv.Atoi(hostPort[1])
 	}
 }
 
+type LanAdFormatPart = string
+
+const (
+	marker = "%"
+
+	Protocol LanAdFormatPart = marker + "pro" + marker
+	Address                  = marker + "addr" + marker
+	Port                     = marker + "port" + marker
+	Service                  = marker + "svc" + marker
+)
+
+func (ad *LanAd) ToFormattedString(format string) string {
+	builder := &strings.Builder{}
+	fmtI := 0
+
+	for fmtI < len(format) {
+		search := format[fmtI:]
+		toAppend := ""
+		jump := 0
+		switch {
+		case strings.HasPrefix(search, Protocol):
+			toAppend = ad.Protocol
+			jump = len(Protocol)
+		case strings.HasPrefix(search, Address):
+			toAppend = ad.Address.String()
+			jump = len(Address)
+		case strings.HasPrefix(search, Port):
+			toAppend = strconv.Itoa(ad.Port)
+			jump = len(Address)
+		case strings.HasPrefix(search, Service):
+			toAppend = ad.Service
+			jump = len(Service)
+		default:
+			toAppend = string(search[0])
+			jump = 1
+		}
+
+		builder.WriteString(toAppend)
+		fmtI += jump
+	}
+
+	return builder.String()
+}
+
 func (ad *LanAd) EqualTo(other *LanAd) bool {
-	return ad.Name == other.Name && ad.Port == other.Port && ad.Protocol == other.Protocol
+	return ad.Service == other.Service && ad.Port == other.Port && ad.Protocol == other.Protocol && ad.Address.String() == other.Address.String()
 }
 
 func StartMdnsServer(ads []LanAd, port int) (*zeroconf.Server, error) {
@@ -104,7 +149,7 @@ func ServicesLookup(ctx context.Context, localhost bool) (map[string][]LanAd, er
 
 		new_ad:
 			for _, adData := range entry.Text {
-				ad := LanAd{}
+				ad := LanAd{Address: entry.AddrIPv4[0]}
 				adData = strings.ReplaceAll(adData, "\\", "")
 				if err := json.Unmarshal([]byte(adData), &ad); err != nil {
 					fmt.Println("could not parse ad:", err)

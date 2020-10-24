@@ -15,20 +15,23 @@ import (
 )
 
 func main() {
-	var walkDir string
-	flag.StringVar(&walkDir, "dir", "",
+	walkDir := ""
+	flag.StringVar(&walkDir, "dir", walkDir,
 		"Specifies the directory to walk to find LanSrv service configurations.  For systemd this would normally be: /etc/systemd/system")
-	var port int
-	flag.IntVar(&port, "port", 42424, "Port to run the server on.")
-	var publishServices string
-	flag.StringVar(&publishServices, "publish", "", "Comma delimited list of services to advertise in the format `<protocol>://<service-name>:<port>` e.g. http://files:9999")
-	var scan bool
-	flag.BoolVar(&scan, "scan", false,
+	port := 42424
+	flag.IntVar(&port, "port", port, "Port to run the server on.")
+	publishServices := ""
+	flag.StringVar(&publishServices, "publish", publishServices, "Comma delimited list of services to advertise in the format `<protocol>://<service-name>:<port>` e.g. http://files:9999")
+	scan := false
+	flag.BoolVar(&scan, "scan", scan,
 		"Scan the local network for services published by other LanSrv nodes.  If not set, the server will start.")
-	var seconds int
-	flag.IntVar(&seconds, "time", 5, "Number of seconds to scan the local network for services.")
-	var service string
-	flag.StringVar(&service, "service", "", "Only print results matching the service name.")
+	seconds := 5
+	flag.IntVar(&seconds, "time", seconds, "Number of seconds to scan the local network for services.")
+	service := ""
+	flag.StringVar(&service, "service", service, "Only print results matching the service name.")
+	format := lansrv.Protocol + "://" + lansrv.Address + ":" + lansrv.Port
+	flag.StringVar(&format, "format", format, `Print results in a custom format delimited by the delim flag.  Keys start and end with %.
+Valid keys are pro=protocol, addr=IP address, port=port, svc=service.`)
 	var delimiter string
 	flag.StringVar(&delimiter, "delim", ",", "Delimiter to use when only printing specific service endpoints.")
 	var localhost bool
@@ -38,7 +41,7 @@ func main() {
 
 	switch {
 	case scan:
-		runDiscovery(seconds, service, delimiter, localhost)
+		runDiscovery(seconds, service, format, delimiter, localhost)
 	default:
 		runServer(walkDir, strings.Split(publishServices, ","), port)
 	}
@@ -90,7 +93,7 @@ svcs_loop:
 	<-sigc
 }
 
-func runDiscovery(seconds int, service, delimiter string, localhost bool) {
+func runDiscovery(seconds int, service, format, delimiter string, localhost bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(seconds))
 	defer cancel()
 
@@ -102,21 +105,13 @@ func runDiscovery(seconds int, service, delimiter string, localhost bool) {
 
 	if len(service) > 0 {
 		svcEndpoints := make(map[string]interface{})
-		for host, svcs := range networkAds {
+		for _, svcs := range networkAds {
 			for _, svc := range svcs {
-				if svc.Name != service {
+				if svc.Service != service {
 					continue
 				}
 
-				var endpoint strings.Builder
-				if len(svc.Protocol) > 0 {
-					endpoint.WriteString(svc.Protocol + "://")
-				}
-				endpoint.WriteString(host)
-				if svc.Port > 0 {
-					endpoint.WriteString(fmt.Sprintf(":%d", svc.Port))
-				}
-				svcEndpoints[endpoint.String()] = struct{}{}
+				svcEndpoints[svc.ToFormattedString(format)] = struct{}{}
 			}
 		}
 
