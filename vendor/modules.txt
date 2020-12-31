@@ -1,12 +1,35 @@
+# github.com/AsynkronIT/protoactor-go v0.0.0-20201101183904-ac049136938d
+## explicit
+github.com/AsynkronIT/protoactor-go/actor
+github.com/AsynkronIT/protoactor-go/eventstream
+github.com/AsynkronIT/protoactor-go/internal/queue/goring
+github.com/AsynkronIT/protoactor-go/internal/queue/mpsc
+github.com/AsynkronIT/protoactor-go/log
+github.com/AsynkronIT/protoactor-go/mailbox
+# github.com/Workiva/go-datastructures v1.0.50
+github.com/Workiva/go-datastructures/queue
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
-# github.com/davecgh/go-spew v1.1.0
+# github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/emirpasic/gods v1.12.0
+github.com/emirpasic/gods/containers
+github.com/emirpasic/gods/lists
+github.com/emirpasic/gods/lists/singlylinkedlist
+github.com/emirpasic/gods/stacks
+github.com/emirpasic/gods/stacks/linkedliststack
+github.com/emirpasic/gods/utils
+# github.com/gogo/protobuf v1.3.1
+github.com/gogo/protobuf/gogoproto
+github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/grandcat/zeroconf v1.0.0
 ## explicit
 github.com/grandcat/zeroconf
 # github.com/miekg/dns v1.1.27
 github.com/miekg/dns
+# github.com/orcaman/concurrent-map v0.0.0-20190107190726-7ed82d9cb717
+github.com/orcaman/concurrent-map
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/stretchr/testify v1.6.1
@@ -15,7 +38,7 @@ github.com/stretchr/testify/assert
 # github.com/zieckey/goini v0.0.0-20180118150432-0da17d361d26
 ## explicit
 github.com/zieckey/goini
-# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+# golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
 # golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa
@@ -24,7 +47,7 @@ golang.org/x/net/internal/iana
 golang.org/x/net/internal/socket
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
-# golang.org/x/sys v0.0.0-20190924154521-2837fb4f24fe
+# golang.org/x/sys v0.0.0-20191118013547-6254a7c3cac6
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
