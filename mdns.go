@@ -13,19 +13,21 @@ import (
 	"github.com/grandcat/zeroconf"
 )
 
+var Service = "LanSrv"
+
 const (
-	service = "LanSrv"
-	domain  = "local"
+	domain = "local"
 )
 
 type LanAd struct {
 	Service  string
 	Address  net.IP `json:"-"`
 	Port     int
+	Path     string
 	Protocol string
 }
 
-func (ad *LanAd) FromMap(adMap map[string]string) {
+func (ad *LanAd) FromMap(adMap map[string]string) error {
 	if name, ok := adMap["Service"]; ok {
 		ad.Service = name
 	}
@@ -35,25 +37,44 @@ func (ad *LanAd) FromMap(adMap map[string]string) {
 		ad.Port = portNum
 	}
 
+	if len(ad.Service) == 0 || ad.Port == 0 {
+		return errors.New("invalid lan ad")
+	}
+
+	if path, ok := adMap["Path"]; ok {
+		ad.Path = path
+	}
+
 	if protocol, ok := adMap["Protocol"]; ok {
 		ad.Protocol = protocol
+	} else {
+		ad.Protocol = "http"
 	}
+
+	return nil
 }
 
-// FromString takes a string formatted {{protocol}}://{{service name}}:{{port}}
+// FromString takes a string formatted {{protocol}}://{{service name}}:{{port}}/{{path}}
 func (ad *LanAd) FromString(adStr string) {
 	if protoSplitI := strings.Index(adStr, "://"); protoSplitI > -1 {
 		ad.Protocol = adStr[:protoSplitI]
 		adStr = adStr[protoSplitI+3:]
 	}
-	fmt.Println("adStr", adStr)
 
 	hostPort := strings.Split(adStr, ":")
 	if len(hostPort) >= 1 {
 		ad.Service = hostPort[0]
 	}
 	if len(hostPort) >= 2 {
-		ad.Port, _ = strconv.Atoi(hostPort[1])
+		portPath := strings.Split(hostPort[1], "/")
+
+		if len(portPath) >= 1 {
+			ad.Port, _ = strconv.Atoi(portPath[0])
+		}
+		if len(hostPort) >= 2 {
+			ad.Path = strings.Join(portPath[1:], "/")
+			ad.Path = strings.ReplaceAll(ad.Path, "//", "/")
+		}
 	}
 }
 
@@ -62,10 +83,11 @@ type LanAdFormatPart = string
 const (
 	marker = "%"
 
-	Protocol LanAdFormatPart = marker + "pro" + marker
-	Address                  = marker + "addr" + marker
-	Port                     = marker + "port" + marker
-	Service                  = marker + "svc" + marker
+	Protocol  LanAdFormatPart = marker + "pro" + marker
+	Address                   = marker + "addr" + marker
+	Port                      = marker + "port" + marker
+	Path                      = marker + "path" + marker
+	AdService                 = marker + "svc" + marker
 )
 
 func (ad *LanAd) ToFormattedString(format string) string {
@@ -86,9 +108,12 @@ func (ad *LanAd) ToFormattedString(format string) string {
 		case strings.HasPrefix(search, Port):
 			toAppend = strconv.Itoa(ad.Port)
 			jump = len(Address)
-		case strings.HasPrefix(search, Service):
+		case strings.HasPrefix(search, Path):
+			toAppend = strings.ReplaceAll(ad.Path, "//", "/")
+			jump = len(Path)
+		case strings.HasPrefix(search, AdService):
 			toAppend = ad.Service
-			jump = len(Service)
+			jump = len(AdService)
 		default:
 			toAppend = string(search[0])
 			jump = 1
@@ -114,14 +139,14 @@ func StartMdnsServer(ads []LanAd, port int) (*zeroconf.Server, error) {
 		records[i] = string(data)
 	}
 
-	return zeroconf.Register(host, service, domain, port, records, nil)
+	return zeroconf.Register(host, Service, domain, port, records, nil)
 }
 
 // ServicesLookup returns a map containing hostnames along with a list of LanAds published
 // on that host.
 func ServicesLookup(ctx context.Context, localhost bool) (map[string][]LanAd, error) {
 	// Discover all services on the network (e.g. _workstation._tcp)
-	resolver, err := zeroconf.NewResolver(nil)
+	resolver, err := zeroconf.NewResolver()
 	if err != nil {
 		return nil, errors.New(fmt.Sprint("Failed to initialize resolver:", err.Error()))
 	}
@@ -168,7 +193,7 @@ func ServicesLookup(ctx context.Context, localhost bool) (map[string][]LanAd, er
 		}
 	}(entries, ads)
 
-	if err := resolver.Browse(ctx, service, domain, entries); err != nil {
+	if err := resolver.Browse(ctx, Service, domain, entries); err != nil {
 		return nil, err
 	}
 

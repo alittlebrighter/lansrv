@@ -27,9 +27,9 @@ func main() {
 		"Scan the local network for services published by other LanSrv nodes.  If not set, the server will start.")
 	seconds := 5
 	flag.IntVar(&seconds, "time", seconds, "Number of seconds to scan the local network for services.")
-	service := ""
-	flag.StringVar(&service, "service", service, "Only print results matching the service name.")
-	format := lansrv.Protocol + "://" + lansrv.Address + ":" + lansrv.Port
+	adService := ""
+	flag.StringVar(&adService, "adService", adService, "Only print results matching the service name.")
+	format := lansrv.Protocol + "://" + lansrv.Address + ":" + lansrv.Port + lansrv.Path
 	flag.StringVar(&format, "format", format, `Print results in a custom format delimited by the delim flag.  Keys start and end with %.
 Valid keys are pro=protocol, addr=IP address, port=port, svc=service.`)
 	var delimiter string
@@ -37,11 +37,12 @@ Valid keys are pro=protocol, addr=IP address, port=port, svc=service.`)
 	var localhost bool
 	flag.BoolVar(&localhost, "localhost", false,
 		"Include services hosted on this computer.")
+	flag.StringVar(&lansrv.Service, "service", lansrv.Service, "Service to scan for.")
 	flag.Parse()
 
 	switch {
 	case scan:
-		runDiscovery(seconds, service, format, delimiter, localhost)
+		runDiscovery(seconds, adService, format, delimiter, localhost)
 	default:
 		runServer(walkDir, strings.Split(publishServices, ","), port)
 	}
@@ -74,6 +75,8 @@ svcs_loop:
 		return
 	}
 
+	fmt.Println("Serving:\n", ads)
+
 	server, err := lansrv.StartMdnsServer(ads, port)
 	if err != nil {
 		fmt.Println("Failed to start server:", err)
@@ -88,12 +91,13 @@ svcs_loop:
 		syscall.SIGHUP,
 		syscall.SIGINT,
 		syscall.SIGTERM,
-		syscall.SIGQUIT)
+		syscall.SIGQUIT,
+	)
 
 	<-sigc
 }
 
-func runDiscovery(seconds int, service, format, delimiter string, localhost bool) {
+func runDiscovery(seconds int, adService, format, delimiter string, localhost bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(seconds))
 	defer cancel()
 
@@ -103,11 +107,11 @@ func runDiscovery(seconds int, service, format, delimiter string, localhost bool
 		return
 	}
 
-	if len(service) > 0 {
+	if len(adService) > 0 {
 		svcEndpoints := make(map[string]interface{})
 		for _, svcs := range networkAds {
 			for _, svc := range svcs {
-				if svc.Service != service {
+				if svc.Service != adService {
 					continue
 				}
 

@@ -27,6 +27,6 @@ func TestLanAdToFormattedString(t *testing.T) {
 	format := Protocol + "://" + Address + ":" + Port
 	assert.Equal(t, "test://192.168.1.4:42", ad.ToFormattedString(format), "Standard format failed.")
 
-	format = "%" + Service + "%{{" + Address + "}}"
-	assert.Equal(t, "%svc%{{192.168.1.4}}", ad.ToFormattedString(format), "Format with extra marker chars failed.")
+	format = "%" + ad.Service + "%{{" + Address + "}}"
+	assert.Equal(t, "svc{{192.168.1.4}}", ad.ToFormattedString(format), "Format with extra marker chars failed.")
 }

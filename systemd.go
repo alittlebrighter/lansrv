@@ -4,6 +4,7 @@ Package lansrv: These functions are built to work with systemd.
 package lansrv
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,23 +30,26 @@ func GatherServiceConfigs(dir string) (configFiles []string) {
 // ParseServiceConfigs takes @arg configs (list of filenames), tries to parse them
 // as ini files and returns all non-nil results for lansrv configurations containing at least a Name
 // and a Port.
-func ParseServiceFiles(configFiles []string) (configs []LanAd) {
+func ParseServiceFiles(configFiles []string) []LanAd {
+	configs := []LanAd{}
+
 	for _, configFile := range configFiles {
 		ini := goini.New()
 		if err := ini.ParseFile(configFile); err != nil {
 			continue
 		}
 
-		adMap, ok := ini.GetKvmap(service)
+		adMap, ok := ini.GetKvmap("LanSrv")
 		if !ok {
 			continue
 		}
 
 		ad := new(LanAd)
-		ad.FromMap(adMap)
-
-		configs = append(configs, *ad)
+		if err := ad.FromMap(adMap); err == nil {
+			fmt.Println("adding lan ad:", adMap)
+			configs = append(configs, *ad)
+		}
 	}
 
-	return
+	return configs
 }
